@@ -20,6 +20,7 @@ services:
     name: coursemap-api
     runtime: node
     plan: free
+    region: oregon
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
@@ -35,7 +36,7 @@ services:
     name: coursemap-web
     runtime: static
     plan: free
-    region: oregon
+    
     buildCommand: printf 'window.API_BASE = "%s";' "$API_BASE_URL" > public/config.js
     staticPublishPath: public
     envVars:
