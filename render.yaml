@@ -20,7 +20,6 @@ services:
     name: coursemap-api
     runtime: node
     plan: free
-    region: oregon
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
