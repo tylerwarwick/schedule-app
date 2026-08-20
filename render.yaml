@@ -35,7 +35,7 @@ services:
   - type: web
     name: coursemap-web
     runtime: static
-    plan: free
+    
     
     buildCommand: printf 'window.API_BASE = "%s";' "$API_BASE_URL" > public/config.js
     staticPublishPath: public
