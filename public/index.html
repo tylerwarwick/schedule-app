@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coursemap — your term, at a glance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E2A3A;
+    --ink-2:#28374B;
+    --paper:#FBF9F4;
+    --paper-2:#F1EEE5;
+    --line:#DDD7C8;
+    --line-soft:#E9E4D8;
+    --accent:#2D9C8F;
+    --accent-dark:#227A70;
+    --accent-2:#E8A33D;
+    --danger:#C1553B;
+    --text:#24303F;
+    --text-muted:#6B7280;
+    --radius:10px;
+    --radius-lg:16px;
+    --shadow:0 1px 2px rgba(30,42,58,.06), 0 8px 24px rgba(30,42,58,.07);
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:'IBM Plex Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper-2);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#fff;}
+
+  .app{display:flex; min-height:100vh;}
+  .spiral{
+    width:22px; flex:0 0 22px;
+    background:
+      radial-gradient(circle 4px, var(--paper-2) 3.5px, transparent 4px) 0 0/22px 26px repeat-y,
+      var(--ink);
+    display:none;
+  }
+  @media (min-width:900px){ .spiral{display:block;} }
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  header.top{background:var(--ink); color:#F4F1E8; padding:22px 28px 0 28px;}
+  .top-row{
+    display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding-bottom:16px; border-bottom:1px solid rgba(244,241,232,.12);
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand h1{font-family:var(--font-display); font-optical-sizing:auto; font-weight:600; font-size:26px; margin:0; letter-spacing:.2px;}
+  .brand span.tag{font-family:var(--font-mono); font-size:11px; color:var(--accent-2); letter-spacing:.08em; text-transform:uppercase;}
+  .status-dot{width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; background:var(--accent);}
+  .status-dot.off{background:var(--danger);}
+  .status{font-family:var(--font-mono); font-size:10.5px; color:#C9C3B3; display:flex; align-items:center;}
+  .top-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    font-family:var(--font-body); font-size:13px; font-weight:600;
+    border:1px solid transparent; border-radius:8px; padding:8px 14px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.5; cursor:default;}
+  .btn-ghost{background:transparent; border-color:rgba(244,241,232,.25); color:#F4F1E8;}
+  .btn-ghost:hover{background:rgba(244,241,232,.08);}
+  .btn-accent{background:var(--accent); color:#fff;}
+  .btn-accent:hover{background:var(--accent-dark);}
+  .btn-outline{background:var(--paper); border-color:var(--line); color:var(--text);}
+  .btn-outline:hover{border-color:var(--accent); color:var(--accent-dark);}
+  .btn-danger-outline{background:transparent; border-color:rgba(193,85,59,.5); color:#E8917C;}
+  .btn-danger-outline:hover{background:rgba(193,85,59,.15);}
+  .btn-sm{padding:5px 10px; font-size:12px;}
+  .btn-nav{padding:6px 10px; font-size:14px; line-height:1;}
+
+  .tabs{display:flex; align-items:flex-end; gap:4px; padding-top:14px; overflow-x:auto;}
+  .tab{
+    font-family:var(--font-body); font-size:13px; font-weight:600; color:#C9C3B3;
+    background:rgba(244,241,232,.06); border:1px solid rgba(244,241,232,.10); border-bottom:none;
+    padding:9px 16px 10px 16px; border-radius:10px 10px 0 0; cursor:pointer; white-space:nowrap; position:relative; top:1px;
+  }
+  .tab.active{background:var(--paper-2); color:var(--ink); border-color:var(--paper-2);}
+  .tab-add{
+    font-family:var(--font-mono); color:var(--accent-2); background:transparent;
+    border:1px dashed rgba(244,241,232,.3); border-bottom:none;
+    padding:9px 12px 10px 12px; border-radius:10px 10px 0 0; cursor:pointer; white-space:nowrap;
+  }
+
+  .content{flex:1; padding:20px 28px 40px 28px; display:grid; grid-template-columns:1fr; gap:20px;}
+  @media (min-width:1080px){ .content{grid-template-columns:minmax(0,1fr) 320px;} }
+
+  .card{background:var(--paper); border:1px solid var(--line-soft); border-radius:var(--radius-lg); box-shadow:var(--shadow);}
+
+  .grid-card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 18px 6px 18px; flex-wrap:wrap;}
+  .sched-name{
+    font-family:var(--font-display); font-size:19px; font-weight:600; color:var(--ink);
+    background:transparent; border:none; border-bottom:1px dashed transparent; padding:2px 0; max-width:220px;
+  }
+  .sched-name:hover, .sched-name:focus{border-bottom:1px dashed var(--accent); outline:none;}
+  .conflict-pill{font-family:var(--font-mono); font-size:11.5px; color:#fff; background:var(--danger); padding:4px 10px; border-radius:999px;}
+
+  .week-nav{display:flex; align-items:center; gap:14px; padding:0 18px 12px 18px; flex-wrap:wrap;}
+  .week-nav .range{
+    font-family:var(--font-mono); font-size:12px; color:var(--text-muted); letter-spacing:.02em;
+    min-width:150px;
+  }
+  .week-nav .navbtns{display:flex; gap:4px;}
+
+  .grid-wrap{padding:6px 18px 20px 18px; overflow-x:auto; overscroll-behavior-x:contain; touch-action:pan-y;}
+  .weekgrid{display:flex; min-width:560px; user-select:none;}
+  .timecol{flex:0 0 54px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); padding-top:44px;}
+  .timecol .slot{height:56px; position:relative;}
+  .timecol .slot span{position:absolute; top:-6px; right:8px;}
+  .daycols{display:flex; flex:1; gap:0;}
+  .daycol{flex:1; min-width:78px; border-left:1px solid var(--line-soft);}
+  .daycol:last-child{border-right:1px solid var(--line-soft);}
+  .dayhead{
+    height:44px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  }
+  .dayhead .dname{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted);}
+  .dayhead .dnum{font-family:var(--font-display); font-size:16px; font-weight:600; color:var(--ink); line-height:1.1;}
+  .dayhead.today .dnum{
+    background:var(--accent); color:#fff; width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .daybody{position:relative; background-image:repeating-linear-gradient(to bottom, var(--line-soft) 0, var(--line-soft) 1px, transparent 1px, transparent 56px);}
+  .classblock{
+    position:absolute; left:3px; right:3px; border-radius:7px; padding:6px 7px; color:#fff; font-size:11.5px; line-height:1.3;
+    overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.15); border:1px solid rgba(0,0,0,.08); transition:filter .1s ease;
+  }
+  .classblock:hover{filter:brightness(1.06);}
+  .classblock b{display:block; font-weight:700; font-size:12px;}
+  .classblock .meta{opacity:.85; font-family:var(--font-mono); font-size:10px;}
+  .classblock.conflict{outline:2px solid var(--danger); outline-offset:-2px;}
+
+  .sidebar{display:flex; flex-direction:column; gap:16px;}
+  .side-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px 8px 16px;}
+  .side-head h2{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--ink);}
+  .classlist{list-style:none; margin:0; padding:0 12px 14px 12px; display:flex; flex-direction:column; gap:6px;}
+  .classlist li{display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; cursor:pointer; font-size:13px;}
+  .classlist li:hover{background:var(--paper-2);}
+  .dot{width:10px; height:10px; border-radius:50%; flex:0 0 10px;}
+  .classlist .name{flex:1; font-weight:600; color:var(--text);}
+  .classlist .days{font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);}
+  .empty-note{padding:0 16px 16px 16px; font-size:12.5px; color:var(--text-muted); line-height:1.5;}
+
+  .task-add{display:flex; flex-direction:column; gap:6px; padding:0 12px 12px 12px;}
+  .task-add input, .task-add select{font-family:var(--font-body); font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--text);}
+  .task-group{padding:0 12px;}
+  .task-group h3{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin:10px 0 6px 0;}
+  .task-item{display:flex; align-items:flex-start; gap:8px; padding:6px 4px; border-bottom:1px solid var(--line-soft); font-size:13px;}
+  .task-item:last-child{border-bottom:none;}
+  .task-item input[type=checkbox]{margin-top:2px; accent-color:var(--accent);}
+  .task-item.done .t-title{text-decoration:line-through; color:var(--text-muted);}
+  .task-item .t-title{font-weight:600; color:var(--text); display:block;}
+  .task-item .t-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);}
+  .task-item .t-del{margin-left:auto; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px;}
+  .task-item .t-del:hover{color:var(--danger);}
+  .task-empty{padding:10px 4px 16px 4px; font-size:12.5px; color:var(--text-muted);}
+
+  .overlay{position:fixed; inset:0; background:rgba(30,42,58,.45); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper); border-radius:var(--radius-lg); width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.25); max-height:90vh; overflow-y:auto;}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:18px 20px 8px 20px;}
+  .modal-head h2{font-family:var(--font-display); font-size:19px; margin:0; color:var(--ink);}
+  .modal-close{background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-muted);}
+  .modal-body{padding:6px 20px 20px 20px; display:flex; flex-direction:column; gap:12px;}
+  .field label{display:block; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:5px;}
+  .field input, .field select{width:100%; font-family:var(--font-body); font-size:14px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .days-pick{display:flex; gap:6px; flex-wrap:wrap;}
+  .day-chip{font-family:var(--font-mono); font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; cursor:pointer; background:#fff; color:var(--text-muted);}
+  .day-chip.selected{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .color-pick{display:flex; gap:8px; flex-wrap:wrap;}
+  .swatch{width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent;}
+  .swatch.selected{border-color:var(--ink); box-shadow:0 0 0 2px #fff inset;}
+  .modal-actions{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+  .warn-inline{font-size:12px; color:var(--danger); background:rgba(193,85,59,.08); border:1px solid rgba(193,85,59,.25); border-radius:8px; padding:8px 10px;}
+
+  footer.credit{text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); padding:6px 0 26px 0;}
+
+  @media print{
+    header.top .top-actions, .tab-add, .spiral, .sidebar .side-head button, .task-add{display:none !important;}
+    body{background:#fff;}
+    .card{box-shadow:none; border-color:#ccc;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="spiral" aria-hidden="true"></div>
+  <div class="main">
+    <header class="top">
+      <div class="top-row">
+        <div class="brand">
+          <h1>Coursemap</h1>
+          <span class="tag">your term, on the server</span>
+        </div>
+        <div class="top-actions">
+          <span class="status" id="status"><span class="status-dot" id="statusDot"></span><span id="statusText">connecting…</span></span>
+          <button class="btn btn-ghost btn-sm" id="btnWeekend">Show weekends</button>
+          <button class="btn btn-ghost btn-sm" id="btnPrint">Print</button>
+        </div>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </header>
+
+    <div class="content">
+      <div class="card">
+        <div class="grid-card-head">
+          <input class="sched-name" id="schedName" spellcheck="false">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="conflict-pill" id="conflictPill" style="display:none;"></span>
+            <button class="btn btn-accent btn-sm" id="btnAddClass">+ Add class</button>
+          </div>
+        </div>
+        <div class="week-nav">
+          <div class="navbtns">
+            <button class="btn btn-outline btn-nav" id="btnPrevWeek" title="Previous week">‹</button>
+            <button class="btn btn-outline btn-sm" id="btnToday">Today</button>
+            <button class="btn btn-outline btn-nav" id="btnNextWeek" title="Next week">›</button>
+          </div>
+          <span class="range" id="weekRange"></span>
+        </div>
+        <div class="grid-wrap" id="gridWrap">
+          <div class="weekgrid" id="weekgrid"></div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="card">
+          <div class="side-head"><h2>Classes</h2></div>
+          <ul class="classlist" id="classList"></ul>
+          <div class="empty-note" id="classEmptyNote" style="display:none;">No classes yet. Add one to see it on the grid — it'll repeat every matching weekday, past and future.</div>
+        </div>
+
+        <div class="card">
+          <div class="side-head"><h2>Assignments</h2></div>
+          <div class="task-add">
+            <input type="text" id="taskTitle" placeholder="Assignment or task...">
+            <div class="row2">
+              <select id="taskCourse"></select>
+              <input type="date" id="taskDue">
+            </div>
+            <button class="btn btn-outline btn-sm" id="btnAddTask">+ Add to list</button>
+          </div>
+          <div id="taskGroups"></div>
+        </div>
+      </div>
+    </div>
+    <footer class="credit">stored in a database on the server — nothing leaves it except to load your view</footer>
+  </div>
+</div>
+
+<div class="overlay" id="classOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="classModalTitle">Add class</h2>
+      <button class="modal-close" id="closeClassModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Course name</label><input id="cName" placeholder="e.g. Organic Chemistry II"></div>
+      <div class="row2">
+        <div class="field"><label>Instructor</label><input id="cInstructor" placeholder="optional"></div>
+        <div class="field"><label>Location</label><input id="cLocation" placeholder="optional"></div>
+      </div>
+      <div class="field">
+        <label>Days (repeats weekly)</label>
+        <div class="days-pick" id="cDays"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Start time</label><input type="time" id="cStart" value="09:00"></div>
+        <div class="field"><label>End time</label><input type="time" id="cEnd" value="10:00"></div>
+      </div>
+      <div class="field"><label>Color</label><div class="color-pick" id="cColors"></div></div>
+      <div class="warn-inline" id="cConflictWarn" style="display:none;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-danger-outline btn-sm" id="btnDeleteClass" style="display:none;">Delete</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-accent" id="btnSaveClass">Save class</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  var HOUR_START = 7, HOUR_END = 22, PX_PER_HOUR = 56;
+  var PALETTE = [
+    {n:"teal",   c:"#2D9C8F"}, {n:"amber",  c:"#E8A33D"}, {n:"rose",  c:"#D8697B"},
+    {n:"indigo", c:"#5B6FD6"}, {n:"moss",   c:"#7A9A4C"}, {n:"clay",  c:"#C16E4A"},
+    {n:"plum",   c:"#8E5A9E"}, {n:"sky",    c:"#4C97C9"}, {n:"ochre", c:"#C9A227"},
+    {n:"slate",  c:"#6B7A8F"}
+  ];
+  var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  var state = { schedules: [], activeScheduleId: null };
+  var editingClassId = null;
+  var selectedDays = [];
+  var selectedColor = PALETTE[0].c;
+  var currentWeekStart = mondayOf(new Date());
+  var wheelCooldown = false;
+  var touchStartX = null;
+
+  function mondayOf(d){
+    var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var dow = date.getDay(); // 0=Sun..6=Sat
+    var diff = (dow === 0 ? -6 : 1 - dow); // shift back to Monday
+    date.setDate(date.getDate() + diff);
+    return date;
+  }
+  function addDays(d, n){
+    var nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    nd.setDate(nd.getDate() + n);
+    return nd;
+  }
+  function isSameDate(a, b){
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+  function dateISO(d){
+    var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+    return y+"-"+m+"-"+day;
+  }
+
+  function setStatus(ok, text){
+    document.getElementById("statusDot").classList.toggle("off", !ok);
+    document.getElementById("statusText").textContent = text;
+  }
+
+  var API_BASE = (window.API_BASE || "");
+
+  async function api(method, url, body){
+    try{
+      var res = await fetch(API_BASE + url, {
+        method: method,
+        headers: body ? {"Content-Type":"application/json"} : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if(!res.ok){
+        var err = await res.json().catch(function(){ return {error:"request failed"}; });
+        throw new Error(err.error || ("HTTP " + res.status));
+      }
+      setStatus(true, "saved to database");
+      return await res.json();
+    }catch(e){
+      setStatus(false, "offline — check the API server");
+      throw e;
+    }
+  }
+
+  async function refresh(){
+    var data = await api("GET", "/api/state");
+    state = data;
+    renderAll();
+  }
+
+  function activeSchedule(){
+    var s = state.schedules.filter(function(s){ return s.id === state.activeScheduleId; })[0];
+    return s || state.schedules[0];
+  }
+
+  function toMinutes(hhmm){ var p = hhmm.split(":"); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+
+  function findConflicts(classes){
+    var conflicts = {};
+    for(var i=0;i<classes.length;i++){
+      for(var j=i+1;j<classes.length;j++){
+        var a = classes[i], b = classes[j];
+        var sharedDay = a.days.some(function(d){ return b.days.indexOf(d) !== -1; });
+        if(!sharedDay) continue;
+        var aS = toMinutes(a.start), aE = toMinutes(a.end);
+        var bS = toMinutes(b.start), bE = toMinutes(b.end);
+        if(aS < bE && bS < aE){ conflicts[a.id] = true; conflicts[b.id] = true; }
+      }
+    }
+    return conflicts;
+  }
+
+  function renderAll(){
+    if(!state.schedules.length){ return; }
+    renderTabs();
+    renderSchedName();
+    renderWeekRange();
+    renderGrid();
+    renderClassList();
+    renderTaskCourseOptions();
+    renderTasks();
+  }
+
+  function renderTabs(){
+    var tabs = document.getElementById("tabs");
+    tabs.innerHTML = "";
+    state.schedules.forEach(function(s){
+      var t = document.createElement("div");
+      t.className = "tab" + (s.id === state.activeScheduleId ? " active" : "");
+      t.textContent = s.name;
+      t.addEventListener("click", async function(){
+        await api("PUT", "/api/meta/active-schedule", {scheduleId: s.id});
+        state.activeScheduleId = s.id;
+        renderAll();
+      });
+      tabs.appendChild(t);
+    });
+    var add = document.createElement("div");
+    add.className = "tab-add";
+    add.textContent = "+ new schedule";
+    add.addEventListener("click", async function(){
+      var name = prompt("Name this schedule (e.g. Fall Backup Plan):", "New Schedule");
+      if(!name) return;
+      await api("POST", "/api/schedules", {name: name});
+      await refresh();
+    });
+    tabs.appendChild(add);
+
+    if(state.schedules.length > 1){
+      var del = document.createElement("div");
+      del.className = "tab-add";
+      del.style.color = "#E8917C";
+      del.textContent = "delete current";
+      del.addEventListener("click", async function(){
+        var s = activeSchedule();
+        if(!confirm('Delete "'+s.name+'"? This cannot be undone.')) return;
+        await api("DELETE", "/api/schedules/" + s.id);
+        await refresh();
+      });
+      tabs.appendChild(del);
+    }
+  }
+
+  function renderSchedName(){
+    var input = document.getElementById("schedName");
+    input.value = activeSchedule().name;
+    var timer = null;
+    input.oninput = function(){
+      clearTimeout(timer);
+      var val = input.value;
+      timer = setTimeout(async function(){
+        await api("PUT", "/api/schedules/" + activeSchedule().id, {name: val || "Untitled"});
+        activeSchedule().name = val || "Untitled";
+        renderTabs();
+      }, 400);
+    };
+  }
+
+  function renderWeekRange(){
+    var start = currentWeekStart;
+    var end = addDays(currentWeekStart, 6);
+    var txt;
+    if(start.getMonth() === end.getMonth()){
+      txt = MONTH_NAMES[start.getMonth()] + " " + start.getDate() + "–" + end.getDate() + ", " + end.getFullYear();
+    } else {
+      txt = MONTH_NAMES[start.getMonth()] + " " + start.getDate() + " – " + MONTH_NAMES[end.getMonth()] + " " + end.getDate() + ", " + end.getFullYear();
+    }
+    document.getElementById("weekRange").textContent = txt;
+  }
+
+  function goToWeek(offsetWeeks){
+    currentWeekStart = addDays(currentWeekStart, offsetWeeks * 7);
+    renderWeekRange();
+    renderGrid();
+  }
+  function goToday(){
+    currentWeekStart = mondayOf(new Date());
+    renderWeekRange();
+    renderGrid();
+  }
+
+  function renderGrid(){
+    var sched = activeSchedule();
+    var days = sched.showWeekends ? DAYS : DAYS.slice(0,5);
+    var wrap = document.getElementById("weekgrid");
+    wrap.innerHTML = "";
+    var today = new Date();
+
+    var timecol = document.createElement("div");
+    timecol.className = "timecol";
+    for(var h=HOUR_START; h<HOUR_END; h++){
+      var slot = document.createElement("div");
+      slot.className = "slot";
+      var lbl = document.createElement("span");
+      var hour12 = ((h % 12) === 0) ? 12 : (h % 12);
+      lbl.textContent = hour12 + (h < 12 ? "a" : "p");
+      slot.appendChild(lbl);
+      timecol.appendChild(slot);
+    }
+    wrap.appendChild(timecol);
+
+    var daycols = document.createElement("div");
+    daycols.className = "daycols";
+
+    var conflicts = findConflicts(sched.classes);
+    var pill = document.getElementById("conflictPill");
+    var nConf = Object.keys(conflicts).length;
+    if(nConf > 0){
+      pill.style.display = "inline-block";
+      pill.textContent = nConf + " class" + (nConf>1?"es":"") + " overlapping";
+    } else {
+      pill.style.display = "none";
+    }
+
+    days.forEach(function(day, idx){
+      var colDate = addDays(currentWeekStart, idx);
+      var isToday = isSameDate(colDate, today);
+
+      var col = document.createElement("div");
+      col.className = "daycol";
+
+      var head = document.createElement("div");
+      head.className = "dayhead" + (isToday ? " today" : "");
+      var dname = document.createElement("div");
+      dname.className = "dname"; dname.textContent = day;
+      var dnum = document.createElement("div");
+      dnum.className = "dnum"; dnum.textContent = colDate.getDate();
+      head.appendChild(dname); head.appendChild(dnum);
+      col.appendChild(head);
+
+      var body = document.createElement("div");
+      body.className = "daybody";
+      body.style.height = ((HOUR_END-HOUR_START)*PX_PER_HOUR) + "px";
+
+      // classes recur weekly: any class whose weekday list includes this
+      // column's weekday shows up here, regardless of which week we're viewing
+      sched.classes.filter(function(c){ return c.days.indexOf(day) !== -1; }).forEach(function(c){
+        var top = (toMinutes(c.start) - HOUR_START*60) / 60 * PX_PER_HOUR;
+        var height = (toMinutes(c.end) - toMinutes(c.start)) / 60 * PX_PER_HOUR;
+        if(height < 22) height = 22;
+        var block = document.createElement("div");
+        block.className = "classblock" + (conflicts[c.id] ? " conflict" : "");
+        block.style.top = top + "px";
+        block.style.height = height + "px";
+        block.style.background = c.color;
+        block.innerHTML = "<b>"+escapeHtml(c.name)+"</b><span class='meta'>"+fmtTime(c.start)+"–"+fmtTime(c.end)+(c.location? " · "+escapeHtml(c.location):"")+"</span>";
+        block.addEventListener("click", function(){ openClassModal(c.id); });
+        body.appendChild(block);
+      });
+
+      col.appendChild(body);
+      daycols.appendChild(col);
+    });
+
+    wrap.appendChild(daycols);
+  }
+
+  function fmtTime(hhmm){
+    var p = hhmm.split(":"); var h = parseInt(p[0],10); var m = p[1];
+    var suf = h>=12 ? "p" : "a";
+    var h12 = (h%12)===0 ? 12 : (h%12);
+    return h12 + (m==="00" ? "" : ":"+m) + suf;
+  }
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, function(ch){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
+    });
+  }
+
+  function renderClassList(){
+    var sched = activeSchedule();
+    var list = document.getElementById("classList");
+    var note = document.getElementById("classEmptyNote");
+    list.innerHTML = "";
+    if(sched.classes.length === 0){ note.style.display = "block"; return; }
+    note.style.display = "none";
+    sched.classes.forEach(function(c){
+      var li = document.createElement("li");
+      var dot = document.createElement("span");
+      dot.className = "dot"; dot.style.background = c.color;
+      var name = document.createElement("span");
+      name.className = "name"; name.textContent = c.name;
+      var days = document.createElement("span");
+      days.className = "days"; days.textContent = c.days.map(function(d){return d.slice(0,2);}).join(" ");
+      li.appendChild(dot); li.appendChild(name); li.appendChild(days);
+      li.addEventListener("click", function(){ openClassModal(c.id); });
+      list.appendChild(li);
+    });
+  }
+
+  function renderTaskCourseOptions(){
+    var sel = document.getElementById("taskCourse");
+    var sched = activeSchedule();
+    sel.innerHTML = "<option value=''>No course</option>";
+    sched.classes.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c.id; o.textContent = c.name;
+      sel.appendChild(o);
+    });
+  }
+
+  function todayPlus(n){
+    var d = new Date(); d.setDate(d.getDate()+n); return dateISO(d);
+  }
+
+  function renderTasks(){
+    var sched = activeSchedule();
+    var container = document.getElementById("taskGroups");
+    container.innerHTML = "";
+    if(!sched.tasks || sched.tasks.length === 0){
+      container.innerHTML = "<div class='task-empty'>Nothing tracked yet. Add an assignment above.</div>";
+      return;
+    }
+    var todayStr = todayPlus(0), tomorrowStr = todayPlus(1), weekEnd = todayPlus(7);
+    var groups = {"Today":[], "Tomorrow":[], "This week":[], "Later":[], "Done":[]};
+    sched.tasks.forEach(function(t){
+      if(t.done){ groups["Done"].push(t); return; }
+      if(!t.due){ groups["Later"].push(t); return; }
+      if(t.due === todayStr) groups["Today"].push(t);
+      else if(t.due === tomorrowStr) groups["Tomorrow"].push(t);
+      else if(t.due < weekEnd) groups["This week"].push(t);
+      else groups["Later"].push(t);
+    });
+
+    ["Today","Tomorrow","This week","Later","Done"].forEach(function(key){
+      var items = groups[key];
+      if(items.length === 0) return;
+      var h = document.createElement("h3");
+      h.textContent = key + " (" + items.length + ")";
+      container.appendChild(h);
+      items.forEach(function(t){
+        var course = sched.classes.filter(function(c){return c.id===t.courseId;})[0];
+        var row = document.createElement("div");
+        row.className = "task-item" + (t.done ? " done" : "");
+        var cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = !!t.done;
+        cb.addEventListener("change", async function(){
+          await api("PUT", "/api/tasks/" + t.id, {done: cb.checked});
+          await refresh();
+        });
+        var mid = document.createElement("div");
+        mid.style.flex = "1";
+        var title = document.createElement("span");
+        title.className = "t-title"; title.textContent = t.title;
+        var meta = document.createElement("span");
+        meta.className = "t-meta";
+        meta.textContent = (course ? course.name : "General") + (t.due ? " · " + t.due : "");
+        mid.appendChild(title); mid.appendChild(meta);
+        var del = document.createElement("button");
+        del.className = "t-del"; del.innerHTML = "&times;";
+        del.addEventListener("click", async function(){
+          await api("DELETE", "/api/tasks/" + t.id);
+          await refresh();
+        });
+        row.appendChild(cb); row.appendChild(mid); row.appendChild(del);
+        container.appendChild(row);
+      });
+    });
+  }
+
+  function openClassModal(classId){
+    editingClassId = classId || null;
+    var sched = activeSchedule();
+    var existing = classId ? sched.classes.filter(function(c){return c.id===classId;})[0] : null;
+
+    document.getElementById("classModalTitle").textContent = existing ? "Edit class" : "Add class";
+    document.getElementById("cName").value = existing ? existing.name : "";
+    document.getElementById("cInstructor").value = existing ? (existing.instructor||"") : "";
+    document.getElementById("cLocation").value = existing ? (existing.location||"") : "";
+    document.getElementById("cStart").value = existing ? existing.start : "09:00";
+    document.getElementById("cEnd").value = existing ? existing.end : "10:00";
+    document.getElementById("btnDeleteClass").style.display = existing ? "inline-flex" : "none";
+    document.getElementById("cConflictWarn").style.display = "none";
+
+    selectedDays = existing ? existing.days.slice() : [];
+    selectedColor = existing ? existing.color : PALETTE[sched.classes.length % PALETTE.length].c;
+
+    var daysWrap = document.getElementById("cDays");
+    daysWrap.innerHTML = "";
+    DAYS.forEach(function(d){
+      var chip = document.createElement("div");
+      chip.className = "day-chip" + (selectedDays.indexOf(d)!==-1 ? " selected" : "");
+      chip.textContent = d;
+      chip.addEventListener("click", function(){
+        var idx = selectedDays.indexOf(d);
+        if(idx===-1) selectedDays.push(d); else selectedDays.splice(idx,1);
+        chip.classList.toggle("selected");
+      });
+      daysWrap.appendChild(chip);
+    });
+
+    var colorsWrap = document.getElementById("cColors");
+    colorsWrap.innerHTML = "";
+    PALETTE.forEach(function(p){
+      var sw = document.createElement("div");
+      sw.className = "swatch" + (p.c===selectedColor ? " selected" : "");
+      sw.style.background = p.c;
+      sw.title = p.n;
+      sw.addEventListener("click", function(){
+        selectedColor = p.c;
+        Array.prototype.forEach.call(colorsWrap.children, function(el){ el.classList.remove("selected"); });
+        sw.classList.add("selected");
+      });
+      colorsWrap.appendChild(sw);
+    });
+
+    document.getElementById("classOverlay").classList.add("open");
+  }
+
+  function closeClassModal(){
+    document.getElementById("classOverlay").classList.remove("open");
+    editingClassId = null;
+  }
+
+  async function saveClass(){
+    var sched = activeSchedule();
+    var name = document.getElementById("cName").value.trim();
+    if(!name){ alert("Give the course a name."); return; }
+    if(selectedDays.length === 0){ alert("Pick at least one day."); return; }
+    var start = document.getElementById("cStart").value;
+    var end = document.getElementById("cEnd").value;
+    if(toMinutes(end) <= toMinutes(start)){ alert("End time must be after start time."); return; }
+
+    var payload = {
+      name: name,
+      instructor: document.getElementById("cInstructor").value.trim(),
+      location: document.getElementById("cLocation").value.trim(),
+      color: selectedColor,
+      days: selectedDays.slice(),
+      start: start, end: end
+    };
+
+    if(editingClassId){
+      await api("PUT", "/api/classes/" + editingClassId, payload);
+    } else {
+      await api("POST", "/api/schedules/" + sched.id + "/classes", payload);
+    }
+    closeClassModal();
+    await refresh();
+  }
+
+  async function deleteClass(){
+    if(!editingClassId) return;
+    if(!confirm("Delete this class? Linked assignments will keep their title but unlink.")) return;
+    await api("DELETE", "/api/classes/" + editingClassId);
+    closeClassModal();
+    await refresh();
+  }
+
+  async function addTask(){
+    var title = document.getElementById("taskTitle").value.trim();
+    if(!title) return;
+    var courseId = document.getElementById("taskCourse").value;
+    var due = document.getElementById("taskDue").value;
+    var sched = activeSchedule();
+    await api("POST", "/api/schedules/" + sched.id + "/tasks", {title: title, courseId: courseId || null, due: due || null});
+    document.getElementById("taskTitle").value = "";
+    document.getElementById("taskDue").value = "";
+    await refresh();
+  }
+
+  document.getElementById("btnAddClass").addEventListener("click", function(){ openClassModal(null); });
+  document.getElementById("closeClassModal").addEventListener("click", closeClassModal);
+  document.getElementById("classOverlay").addEventListener("click", function(e){ if(e.target === this) closeClassModal(); });
+  document.getElementById("btnSaveClass").addEventListener("click", saveClass);
+  document.getElementById("btnDeleteClass").addEventListener("click", deleteClass);
+  document.getElementById("btnAddTask").addEventListener("click", addTask);
+  document.getElementById("taskTitle").addEventListener("keydown", function(e){ if(e.key==="Enter") addTask(); });
+  document.getElementById("btnWeekend").addEventListener("click", async function(){
+    var sched = activeSchedule();
+    var next = !sched.showWeekends;
+    await api("PUT", "/api/schedules/" + sched.id, {showWeekends: next});
+    sched.showWeekends = next;
+    this.textContent = next ? "Hide weekends" : "Show weekends";
+    renderGrid();
+  });
+  document.getElementById("btnPrint").addEventListener("click", function(){ window.print(); });
+
+  document.getElementById("btnPrevWeek").addEventListener("click", function(){ goToWeek(-1); });
+  document.getElementById("btnNextWeek").addEventListener("click", function(){ goToWeek(1); });
+  document.getElementById("btnToday").addEventListener("click", goToday);
+
+  // Horizontal trackpad / mouse-wheel scroll pages between weeks, like
+  // Coursicle's calendar — small deadzone + cooldown so it doesn't fire
+  // continuously on one gesture.
+  var gridWrap = document.getElementById("gridWrap");
+  gridWrap.addEventListener("wheel", function(e){
+    if(Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 12){
+      e.preventDefault();
+      if(wheelCooldown) return;
+      wheelCooldown = true;
+      goToWeek(e.deltaX > 0 ? 1 : -1);
+      setTimeout(function(){ wheelCooldown = false; }, 420);
+    }
+  }, {passive:false});
+
+  // Touch swipe for mobile
+  gridWrap.addEventListener("touchstart", function(e){
+    touchStartX = e.touches[0].clientX;
+  }, {passive:true});
+  gridWrap.addEventListener("touchend", function(e){
+    if(touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 60){ goToWeek(dx < 0 ? 1 : -1); }
+    touchStartX = null;
+  }, {passive:true});
+
+  goToday();
+  refresh().catch(function(){ /* status already reflects offline state */ });
+})();
+</script>
+</body>
+</html>

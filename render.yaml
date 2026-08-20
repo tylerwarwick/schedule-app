@@ -1,0 +1,44 @@
+# Render Blueprint for Coursemap.
+# In the Render dashboard: New -> Blueprint -> pick this repo -> Apply.
+# Creates three resources:
+#   1. coursemap-db   - managed Postgres
+#   2. coursemap-api  - Node/Express API, reads/writes coursemap-db
+#   3. coursemap-web  - static frontend, calls coursemap-api over HTTPS
+#
+# IMPORTANT: Render's free Postgres expires 30 days after creation and is
+# then deleted (no grace period guarantee for real data). Fine for trying
+# this out; switch coursemap-db's plan to "basic-256mb" (~$6-7/mo) before
+# you rely on it for a real term's schedule. See README.md.
+
+databases:
+  - name: coursemap-db
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: coursemap-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: coursemap-db
+          property: connectionString
+      - key: ALLOWED_ORIGIN
+        value: https://coursemap-web.onrender.com
+
+  - type: web
+    name: coursemap-web
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: printf 'window.API_BASE = "%s";' "$API_BASE_URL" > public/config.js
+    staticPublishPath: public
+    envVars:
+      - key: API_BASE_URL
+        value: https://coursemap-api.onrender.com
